@@ -1,0 +1,18 @@
+# OSが作るファイル
+.DS_Store
+Thumbs.db
+
+# 秘密の情報(使わないけど保険)
+.env
+.env.*
+*.key
+*.pem
+secrets*
+
+# 作業用・メモ
+notes/
+*.local.*
+HANDOFF.md
+data/
+_chk.js
+node_modules/
