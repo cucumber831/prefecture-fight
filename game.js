@@ -400,7 +400,8 @@ function update(dt) {
         const n = e.type === 'parry' ? { type: 'parry' } : { type: e.type, x: e.pos.x, y: e.pos.y, s: e.s, dmg: e.dmg, by: e.by === b.L ? 'L' : 'R' };
         fxEvent(b, n); if (b.net === 'host' && b.netEv.length < 16) b.netEv.push(n);
       }
-      if (res) { b.phase = 'over'; b.res = res; b.over = 0; say(res.winner ? '勝負あり!' : '相打ち!', true); }
+      if (res) { b.L.hitDone = b.R.hitDone = true; b.phase = 'over'; b.res = res; b.over = 0;   // 決着後は、振りかけの攻撃も当たらない
+        say(res.winner ? '勝負あり!' : '相打ち!', true); }
     } else if (b.phase === 'over') {
       b.over += H;
       b.L.move = 0; b.R.move = 0; b.L.atkBuf = b.R.atkBuf = 0;
@@ -415,8 +416,8 @@ function showResult(msg) {
   if (msg) { $('#resWin').textContent = msg; $('#resSm').textContent = ''; $('#again').disabled = true; return; }
   const mine = b.net === 'guest' ? 'R' : 'L', w = r.winner === 'L' ? b.L : r.winner === 'R' ? b.R : null;
   $('#resWin').textContent = w ? `${r.winner === mine ? 'あなた' : b.net ? '相手' : 'CPU'}の勝ち(${w.d.name})` : '相打ち、引き分け';
-  const hpLeft = w ? Math.round(Math.max(0, w.hp) / w.hpMax * 100) : 0;
-  $('#resSm').textContent = w ? `${b.t.toFixed(1)}秒で決着。勝者の体力は ${hpLeft}% 残り。` : '';
+  const hpPct = w ? Math.max(0, w.hp) / w.hpMax * 100 : 0, hpLeft = hpPct > 0 && hpPct < 1 ? '1%未満' : Math.round(hpPct) + '%';
+  $('#resSm').textContent = w ? `${b.t.toFixed(1)}秒で決着。勝者の体力は ${hpLeft} 残り。` : '';
 }
 
 let curSc = 1;
@@ -444,6 +445,7 @@ function drawGauge(f, color) {
   c.restore();
 }
 
+const hpBar = f => f.hp <= 0 ? 0 : Math.max(0.025, f.hp / f.hpMax);   // 少しでも残っていれば、ゲージを細く残す(0%に見えて負ける、を防ぐ)
 function render() {
   const b = B; if (!b) return;
   const c = ctx; c.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -480,8 +482,8 @@ function render() {
   }
   b.fx = b.fx.filter(e => e.t < e.life);
   c.restore();
-  $('#hpL').style.setProperty('--v', Math.max(0, Lf.hp / Lf.hpMax).toFixed(3));
-  $('#hpR').style.setProperty('--v', Math.max(0, Rf.hp / Rf.hpMax).toFixed(3));
+  $('#hpL').style.setProperty('--v', hpBar(Lf).toFixed(3));
+  $('#hpR').style.setProperty('--v', hpBar(Rf).toFixed(3));
   const rdy = Lf.cdLeft <= 0 && Lf.phase === 'idle' && Lf.stun <= 0;
   $('#cdTxt').textContent = rdy ? '振り下ろす' : '準備中…';
 }
